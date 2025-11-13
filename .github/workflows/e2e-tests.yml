@@ -1,0 +1,65 @@
+name: E2E-Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  e2e-tests:
+    name: Run E2E Selenium + Cucumber Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Maven Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build and Package Application
+        run: mvn -B clean install
+
+      - name: Start Virtual Display (for Headless Browsers)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+
+      - name: Run E2E Tests
+        run: |
+          echo "Running Selenium + Cucumber Tests..."
+          mvn test -Dcucumber.options="--tags @e2e"
+        env:
+          DISPLAY: :99
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BROWSER: chrome
+          HEADLESS: true
+
+      - name: Upload Cucumber HTML Report (if generated)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-html-report
+          path: target/cucumber-reports/
+
+      - name: Upload Screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: target/screenshots/

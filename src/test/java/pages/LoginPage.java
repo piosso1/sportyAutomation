@@ -14,7 +14,7 @@ public class LoginPage extends CommonMethods {
     @FindBy(xpath = "//*[@id=\"j_page_header\"]/div[1]/div/div[1]/div[1]/div[2]/div[3]/div[1]/input")
     public WebElement passwordField;
 
-    @FindBy(xpath = "//*[@id=\"j_page_header\"]/div[1]/div/div[1]/div[1]/div[2]/div[3]/div[1]/butto")
+    @FindBy(xpath = "//*[@id=\"j_page_header\"]/div[1]/div/div[1]/div[1]/div[2]/div[3]/div[1]/button")
     public WebElement loginButton;
 
     @FindBy(xpath = "/html[1]/body[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[3]/span[1]")

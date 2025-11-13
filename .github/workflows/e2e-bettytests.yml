@@ -1,0 +1,71 @@
+name: E2E Selenium Cucumber Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    name: Run Selenium + Cucumber Tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Install dependencies
+        run: mvn -B clean compile
+
+      - name: Start virtual display (for headless mode)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          Xvfb :99 -screen 0 1920x1080x24 &
+        env:
+          DISPLAY: :99
+
+      - name: Run Cucumber Tests
+        run: |
+          echo "🚀 Running Selenium + Cucumber tests..."
+          mvn test -Dcucumber.options="--tags @e2e" -Dmaven.test.failure.ignore=false
+        env:
+          DISPLAY: :99
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for failed tests
+        if: ${{ failure() }}
+        run: |
+          echo "❌ Some E2E tests failed!"
+          exit 1
+
+      - name: Upload Cucumber Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-report
+          path: target/cucumber-reports/
+
+      - name: Upload Screenshots on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-screenshots
+          path: target/screenshots/
